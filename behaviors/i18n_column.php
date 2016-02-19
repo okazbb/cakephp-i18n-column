@@ -5,12 +5,32 @@
 class I18nColumnBehavior extends ModelBehavior {
 
     const DEFAULT_LANGUAGE = 'ja';
+    const LANGUAGE_EN = 'en';
+    const LANGUAGE_TW = 'tw';
 
+    public $i18nFind = true; //trueの時、findで国際化カラムを取得する
     private $config = array(
-        'language'      => array(), //使用言語
+        'language'      => array(
+            self::LANGUAGE_EN,
+            self::LANGUAGE_TW,
+        ), //使用言語
         'i18n_fields'   => array(), //国際化対応する仮想カラム名
         'i18n_column'   => 'i18n',  //国際化情報を保存するDBカラム名
     );
+
+    /*
+      i18nカラムのデータ格納形式
+        'i18n' => array(
+            'language1' => array(
+                'field_name1' => 'val1',
+                'field_name2' => 'val2',
+            ),
+            'language2' => array(
+                'field_name1' => 'val1',
+                'field_name2' => 'val2',
+            ),
+        )
+    */
 
     /**
      * 言語リスト
@@ -20,11 +40,16 @@ class I18nColumnBehavior extends ModelBehavior {
     }
 
     /**
-     * カラムリスト
-     * @return mixed
+     * @return array
      */
     function i18nFieldList(){
-        return $this->config['i18n_fields'];
+        $listFields = array();
+        foreach($this->config['language'] as $language){
+            foreach($this->config['i18n_fields'] as $field){
+                $listFields[$language][] =  $field . '_' . $language;
+            }
+        }
+        return $listFields;
     }
 
     /**
@@ -39,8 +64,8 @@ class I18nColumnBehavior extends ModelBehavior {
     }
 
     function cleanup(&$model) {
-
     }
+
 
     /**
      * beforeFind
@@ -51,11 +76,12 @@ class I18nColumnBehavior extends ModelBehavior {
     function beforeFind(&$model, $query) {
 
         if(
-            $model->hasField($this->config['i18n_column'])
-            && !isset($query[$model->name]['fields'][$this->config['i18n_column']])
+            $this->i18nFind
+            && $model->hasField($this->config['i18n_column'])
+            && !isset($query[$model->name]['i18n_fields'][$this->config['i18n_column']])
         ){
             //国際化カラムをfindする
-            $query[$model->name]['fields'][]= $this->config['i18n_column']; //TODO group時は無視
+            $query[$model->name]['i18n_fields'][]= $this->config['i18n_column']; //TODO group時は無視
         }
 
         return $query;
@@ -70,36 +96,38 @@ class I18nColumnBehavior extends ModelBehavior {
      */
     function afterFind(&$model, $results, $primary) {
 
-        foreach($results as $key=>&$val){
+        if($this->i18nFind){
+            foreach($results as $key=>&$val){
 
-            if(!isset($val[$model->name])) continue;
-            $i18n_results = array();    //結果セットに追加する内容
-            $i18n_data = array();       //serialize済み多言語カラムデータ
+                if(!isset($val[$model->name])) continue;
+                $i18n_results = array();    //結果セットに追加する内容
+                $i18n_data = array();       //serialize済み多言語カラムデータ
 
-            if(isset($val[$model->name][$this->config['i18n_column']])){
-                $i18n_data = unserialize($val[$model->name][$this->config['i18n_column']]);
-            }
+                if(isset($val[$model->name][$this->config['i18n_column']])){
+                    $i18n_data = unserialize($val[$model->name][$this->config['i18n_column']]);
+                }
 
-            foreach($this->config['language'] as $language){
+                foreach($this->config['language'] as $language){
 
-                if($language == self::DEFAULT_LANGUAGE) continue; //ベース言語は無視
+                    if($language == self::DEFAULT_LANGUAGE) continue; //ベース言語は無視
 
-                if(array_key_exists($language, $i18n_data)){
+                    if(array_key_exists($language, $i18n_data)){
 
-                    $i18n_row = $i18n_data[$language];
-                    foreach($this->config['i18n_fields'] as $val2){
-                        $i18n_results[$val2 . '_' . $language] = isset($i18n_row[$val2]) ? $i18n_row[$val2] : null;
-                    }
+                        $i18n_row = $i18n_data[$language];
+                        foreach($this->config['i18n_fields'] as $val2){
+                            $i18n_results[$val2 . '_' . $language] = isset($i18n_row[$val2]) ? $i18n_row[$val2] : null;
+                        }
 
-                }else {
+                    }else {
 
-                    foreach($this->config['i18n_fields'] as $val3){
-                        $i18n_results[$val3 . '_' . $language] = null;
+                        foreach($this->config['i18n_fields'] as $val3){
+                            $i18n_results[$val3 . '_' . $language] = null;
+                        }
                     }
                 }
-            }
 
-            $val[$model->name] = array_merge($val[$model->name], $i18n_results);
+                $val[$model->name] = array_merge($val[$model->name], $i18n_results);
+            }
         }
 
         return $results;
