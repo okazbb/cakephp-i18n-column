@@ -202,7 +202,7 @@ class I18nBehavior extends ModelBehavior {
             );
             $data = $model->find('first', $params);
 
-            $model->data[$model->name] = array_merge_ex(
+            $model->data[$model->name] = $this->array_merge_ex(
                 $data[$model->name],
                 $model->data[$model->name]
             );
@@ -234,7 +234,7 @@ class I18nBehavior extends ModelBehavior {
      * @param $model
      */
     function set_validate_i18n_column(&$model){
-	    
+        
 	foreach($this->getAllLanguage() as $language){ //save時は全言語をチェック
 
             if($language == self::DEFAULT_LANGUAGE) continue; //ベース言語は無視
@@ -302,5 +302,23 @@ class I18nBehavior extends ModelBehavior {
             }
             $row = array_merge($row, $i18n_results);
         }
+    }
+
+    /**
+     * 配列の結合(同一キー有りの場合は$arr2の値で上書き)
+     */
+    private function array_merge_ex($arr1, $arr2){
+        foreach ($arr2 as $key=>$val){
+            if(isset($arr1[$key])){
+                if (is_array($val)){
+                    $arr1[$key] = array_merge_ex($arr1[$key], $val);
+                } else {
+                    $arr1[$key] = $val;
+                }
+            } else {
+                $arr1[$key] = $val;
+            }
+        }
+        return $arr1;
     }
 }
