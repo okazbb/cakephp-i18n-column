@@ -234,14 +234,30 @@ class I18nBehavior extends ModelBehavior {
      * @param $model
      */
     function set_validate_i18n_column(&$model){
-        
+
 	foreach($this->getAllLanguage() as $language){ //save時は全言語をチェック
 
             if($language == self::DEFAULT_LANGUAGE) continue; //ベース言語は無視
 
             foreach($this->settings[$model->name]['fields'] as $fields){
                 if(isset($model->validate[$fields])){
-                    $model->validate[$fields . '_' . $language] = $model->validate[$fields];
+                    if(isset($model->validate[$fields]['rule'])){
+                        if($model->validate[$fields]['rule'] == 'notEmpty'){
+                            //必須は無視
+                        } else {
+                            $model->validate[$fields . '_' . $language] = $model->validate[$fields];
+                        }
+                    } else {
+                        foreach($model->validate[$fields] as $key=>$val){
+                            if($key == 'notEmpty'){
+                                //必須は無視
+                            } else {
+                                $model->validate[$fields . '_' . $language][$key] = $val;
+                            }
+                        }
+                    }
+
+
                     //TODO autoConvert対応
                 }
             }
