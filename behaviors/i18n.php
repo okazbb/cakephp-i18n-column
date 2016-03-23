@@ -242,14 +242,14 @@ class I18nBehavior extends ModelBehavior {
             foreach($this->settings[$model->name]['fields'] as $fields){
                 if(isset($model->validate[$fields])){
                     if(isset($model->validate[$fields]['rule'])){
-                        if($model->validate[$fields]['rule'] == 'notEmpty'){
+                        if($model->validate[$fields]['rule'] == 'notEmpty' || $model->validate[$fields]['rule'] == 'valid_required'){
                             //必須は無視
                         } else {
                             $model->validate[$fields . '_' . $language] = $model->validate[$fields];
                         }
                     } else {
                         foreach($model->validate[$fields] as $key=>$val){
-                            if($key == 'notEmpty'){
+                            if($key == 'notEmpty' || $key == 'valid_required'){
                                 //必須は無視
                             } else {
                                 $model->validate[$fields . '_' . $language][$key] = $val;
