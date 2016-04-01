@@ -85,6 +85,15 @@ class I18nBehavior extends ModelBehavior {
     }
 
     /**
+     * 国際化カラム名称
+     * @param $model[
+     * @return string
+     */
+    function i18nColumnName(&$model){
+        return $this->i18n_column;
+    }
+
+    /**
      * setup
      * @param object $model
      * @param array $config
@@ -99,8 +108,8 @@ class I18nBehavior extends ModelBehavior {
         }
 
         //言語
-        if(empty($this->language)){
-            $this->language[] = DEFAULT_LANGUAGE;
+	if(empty($this->language)){
+            $this->language[] = DEFAULT_LANGUAGE;		
         }
 
         //バックエンド用の指定
@@ -234,7 +243,7 @@ class I18nBehavior extends ModelBehavior {
      * @param $model
      */
     function set_validate_i18n_column(&$model){
-
+	    
 	foreach($this->getAllLanguage() as $language){ //save時は全言語をチェック
 
             if($language == self::DEFAULT_LANGUAGE) continue; //ベース言語は無視
@@ -336,5 +345,5 @@ class I18nBehavior extends ModelBehavior {
             }
         }
         return $arr1;
-    }
+    }    
 }
